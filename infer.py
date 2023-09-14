@@ -10,16 +10,19 @@ parser = argparse.ArgumentParser()
 parser.add_argument('-c', '--checkpoint', type=str, required=True, help='path to checkpoint, e.g. ./logs/model-100.pth')
 parser.add_argument('input', type=str, help='path to input image')
 
+def show_graph_recursively(script):
+    print(script.graph)
+    for child in script.children():
+        show_graph_recursively(child)
 
 def _infer(path_to_checkpoint_file, path_to_input_image):
     model = Model()
     model.restore(path_to_checkpoint_file)
-    model.cuda()
+    model.cpu()
 
     with torch.no_grad():
         transform = transforms.Compose([
-            transforms.Resize([64, 64]),
-            transforms.CenterCrop([54, 54]),
+            transforms.Resize([54, 54]),
             transforms.ToTensor(),
             transforms.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5])
         ])
@@ -27,10 +30,16 @@ def _infer(path_to_checkpoint_file, path_to_input_image):
         image = Image.open(path_to_input_image)
         image = image.convert('RGB')
         image = transform(image)
-        images = image.unsqueeze(dim=0).cuda()
+        images = image.unsqueeze(dim=0).cpu()
 
-        length_logits, digit1_logits, digit2_logits, digit3_logits, digit4_logits, digit5_logits = model.eval()(images)
+        print(images.shape)
+        show_graph_recursively(model)
 
+        model.eval()
+        m = torch.jit.trace(model, images)
+        torch.jit.save(m, "shvn-torch.pt")
+
+        length_logits, digit1_logits, digit2_logits, digit3_logits, digit4_logits, digit5_logits = model(images)
         length_prediction = length_logits.max(1)[1]
         digit1_prediction = digit1_logits.max(1)[1]
         digit2_prediction = digit2_logits.max(1)[1]

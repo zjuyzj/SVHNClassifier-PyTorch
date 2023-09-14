@@ -6,13 +6,13 @@ import torch.jit
 import torch.nn as nn
 
 
-class Model(torch.jit.ScriptModule):
+class Model(nn.Module):
     CHECKPOINT_FILENAME_PATTERN = 'model-{}.pth'
 
-    __constants__ = ['_hidden1', '_hidden2', '_hidden3', '_hidden4', '_hidden5',
-                     '_hidden6', '_hidden7', '_hidden8', '_hidden9', '_hidden10',
-                     '_features', '_classifier',
-                     '_digit_length', '_digit1', '_digit2', '_digit3', '_digit4', '_digit5']
+    # __constants__ = ['_hidden1', '_hidden2', '_hidden3', '_hidden4', '_hidden5',
+    #                  '_hidden6', '_hidden7', '_hidden8', '_hidden9', '_hidden10',
+    #                  '_features', '_classifier',
+    #                  '_digit_length', '_digit1', '_digit2', '_digit3', '_digit4', '_digit5']
 
     def __init__(self):
         super(Model, self).__init__()
@@ -89,7 +89,7 @@ class Model(torch.jit.ScriptModule):
         self._digit4 = nn.Sequential(nn.Linear(3072, 11))
         self._digit5 = nn.Sequential(nn.Linear(3072, 11))
 
-    @torch.jit.script_method
+    # @torch.jit.script_method
     def forward(self, x):
         x = self._hidden1(x)
         x = self._hidden2(x)
@@ -118,12 +118,12 @@ class Model(torch.jit.ScriptModule):
             min_step = min([int(path_to_model.split('/')[-1][6:-4]) for path_to_model in path_to_models])
             path_to_min_step_model = os.path.join(path_to_dir, Model.CHECKPOINT_FILENAME_PATTERN.format(min_step))
             os.remove(path_to_min_step_model)
-
         path_to_checkpoint_file = os.path.join(path_to_dir, Model.CHECKPOINT_FILENAME_PATTERN.format(step))
         torch.save(self.state_dict(), path_to_checkpoint_file)
         return path_to_checkpoint_file
 
     def restore(self, path_to_checkpoint_file):
-        self.load_state_dict(torch.load(path_to_checkpoint_file))
+        state_dict = torch.load(path_to_checkpoint_file, map_location='cpu')
+        self.load_state_dict(state_dict, strict=False)
         step = int(path_to_checkpoint_file.split('/')[-1][6:-4])
         return step

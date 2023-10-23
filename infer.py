@@ -33,11 +33,11 @@ def _infer(path_to_checkpoint_file, path_to_input_image):
         images = image.unsqueeze(dim=0).cpu()
 
         print(images.shape)
-        show_graph_recursively(model)
 
         model.eval()
-        m = torch.jit.trace(model, images)
-        torch.jit.save(m, "shvn-torch.pt")
+        # m = torch.jit.trace(model, images)
+        # show_graph_recursively(m)
+        # torch.jit.save(m, "shvn-torch.pt")
 
         length_logits, digit1_logits, digit2_logits, digit3_logits, digit4_logits, digit5_logits = model(images)
         length_prediction = length_logits.max(1)[1]
